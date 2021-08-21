@@ -42,7 +42,7 @@ export const getPropertyName = (name: string) =>
 
 const of2Values = (obj: OpenAPIV3.SchemaObject, required: boolean): PropValue[] | null => {
   const values = (obj.oneOf || obj.allOf || obj.anyOf || [])
-    .map(p => schema2value(p, required))
+    .map(p => schema2value(p, false))
     .filter(v => v) as PropValue[]
   return values.length ? values : null
 }
@@ -56,12 +56,12 @@ const object2value = (obj: OpenAPIV3.NonArraySchemaObject, required: boolean): P
       return isRefObject(target) || !target.deprecated
     })
     .map<Prop | null>(name => {
-      const val = schema2value(properties[name], required)
+      const val = schema2value(properties[name], false)
       if (!val) return null
 
       return {
         name: getPropertyName(name),
-        required: obj.required?.includes(name) ?? required,
+        required: obj.required?.includes(name) ?? false,
         description: val.description,
         values: [val]
       }
@@ -117,15 +117,15 @@ export const schema2value = (
 
     if (schema.oneOf || schema.allOf || schema.anyOf) {
       hasOf = schema.oneOf ? 'oneOf' : schema.allOf ? 'allOf' : 'anyOf'
-      value = of2Values(schema, required)
+      value = of2Values(schema, false)
     } else if (schema.enum) {
       isEnum = true
       value = schema.type === 'string' ? schema.enum.map(e => `'${e}'`) : schema.enum
     } else if (isArraySchema(schema)) {
       isArray = true
-      value = schema2value(schema.items, required)
+      value = schema2value(schema.items, false)
     } else if (schema.properties || schema.additionalProperties) {
-      value = object2value(schema, required)
+      value = object2value(schema, false)
     } else if (schema.format === 'binary') {
       value = isResponse ? 'Blob' : BINARY_TYPE
     } else if (schema.type !== 'object') {
